@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { close, logo, menu } from '../assets'
 import { navLinks } from '../constants'
 
@@ -8,16 +9,16 @@ const Navbar = () => {
 
   return (
     <nav className='w-full flex py-6 justify-between items-center navbar'>
-      <img src={logo} alt='hoobank' className='w-[124px] h-[32px]'/>
+      <img src={logo} alt='Quality Seeds LTD' className='w-[124px] h-[32px]'/>
       <ul className='list-none sm:flex hidden justify-end items-center flex-1'>
         {navLinks.map((nav, i) => (
           <li 
             key={nav.id}
-            className={`font-poppins font-normal cursor-pointer text-[16px] ${i === navLinks.length - 1 ? 'mr-0' : 'mr-10'} text-white mr-10`}
+            className={`font-poppins font-normal cursor-pointer text-[16px] text-white ${i === navLinks.length - 1 ? 'mr-0' : 'mr-10'}`}
           >
-            <a href={`#${nav.id}`}>
+            <Link to={nav.path}>
               {nav.title}
-            </a>
+            </Link>
           </li>        
         ))}
       </ul>
@@ -33,11 +34,11 @@ const Navbar = () => {
             {navLinks.map((nav, i) => (
               <li 
                 key={nav.id}
-                className={`font-poppins font-normal cursor-pointer text-[16px] ${i === navLinks.length - 1 ? 'mr-0' : 'mb-4'} text-white mr-10`}
+                className={`font-poppins font-normal cursor-pointer text-[16px] text-white ${i === navLinks.length - 1 ? 'mb-0' : 'mb-4'}`}
               >
-                <a href={`#${nav.id}`}>
+                <Link to={nav.path} onClick={() => setToggle(false)}>
                   {nav.title}
-                </a>
+                </Link>
               </li>        
             ))}
           </ul>

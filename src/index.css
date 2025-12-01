@@ -4,6 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply bg-primary text-body;
+}
+p, li, span {
+  @apply text-muted;
+}
+
 :root {
   --black-gradient: linear-gradient(
     144.39deg,

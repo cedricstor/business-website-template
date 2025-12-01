@@ -30,18 +30,23 @@ const corsHeaders = (origin) => {
 }
 
 const getClient = async () => {
-  if (!connectionString) {
+  const conn = typeof connectionString === 'string' ? connectionString.trim() : ''
+  if (!conn) {
     throw new Error('Missing TABLE_CONN_STRING / AZURE_TABLE_CONNECTION_STRING')
   }
   if (!tableClientPromise) {
-    const client = TableClient.fromConnectionString(connectionString, tableName)
-    tableClientPromise = client
-      .createTable()
-      .catch((err) => {
-        if (err?.statusCode === 409) return
-        throw err
-      })
-      .then(() => client)
+    try {
+      const client = TableClient.fromConnectionString(conn, tableName)
+      tableClientPromise = client
+        .createTable()
+        .catch((err) => {
+          if (err?.statusCode === 409) return
+          throw err
+        })
+        .then(() => client)
+    } catch (err) {
+      throw new Error('Invalid table connection string.')
+    }
   }
   return tableClientPromise
 }

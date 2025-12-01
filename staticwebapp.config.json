@@ -13,5 +13,16 @@
       "/*.ico",
       "/favicon.ico"
     ]
-  }
+  },
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://mango-sand-04cd6411e.3.azurestaticapps.net,http://localhost:5173",
+        "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization"
+      }
+    }
+  ]
 }

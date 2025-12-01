@@ -1,0 +1,10 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "Azure Functions for worksheets storage",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/data-tables": "^13.2.0"
+  }
+}

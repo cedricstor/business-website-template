@@ -39,6 +39,7 @@ const Product = () => {
   const [showWorksheets, setShowWorksheets] = useState(false)
   const [selectedFolder, setSelectedFolder] = useState('2026')
   const [customFolders, setCustomFolders] = useState(() => {
+    if (API_BASE) return []
     try {
       const stored = JSON.parse(localStorage.getItem('worksheetCustomFolders') || '[]')
       return Array.isArray(stored) ? stored : []
@@ -49,6 +50,7 @@ const Product = () => {
   const [newFolderName, setNewFolderName] = useState('')
   const [uploadStatus, setUploadStatus] = useState({})
   const [customSheets, setCustomSheets] = useState(() => {
+    if (API_BASE) return []
     try {
       const stored = JSON.parse(localStorage.getItem('worksheetCustomSheets') || '[]')
       return Array.isArray(stored) ? stored : []
@@ -64,6 +66,8 @@ const Product = () => {
       return {}
     }
   })
+  const [dataLoading, setDataLoading] = useState(false)
+  const [dataError, setDataError] = useState('')
   const allSheets = useMemo(() => [...WORKSHEETS, ...customSheets], [customSheets])
   const displayedSheets = useMemo(
     () => allSheets.filter((sheet) => sheet.folder === selectedFolder || !sheet.folder),
@@ -81,6 +85,22 @@ const Product = () => {
     [customFolders, customSheets]
   )
   const worksheetsRef = useRef(null)
+  const saveSheetsLocal = (sheets) => {
+    if (API_BASE) return
+    try {
+      localStorage.setItem('worksheetCustomSheets', JSON.stringify(sheets))
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  const saveFoldersLocal = (folders) => {
+    if (API_BASE) return
+    try {
+      localStorage.setItem('worksheetCustomFolders', JSON.stringify(folders))
+    } catch (_) {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     // Load locally cached "last opened" times
@@ -151,16 +171,40 @@ const Product = () => {
     }))
   }
 
-  const addCustomSheet = () => {
+  const addCustomSheet = async () => {
     if (!newTitle.trim() || !newUrl.trim()) return
     const id = `${newTitle.trim().toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
     const embed = `${newUrl.trim()}${newUrl.includes('?') ? '&' : '?'}action=edit&wdAllowInteractivity=True&wdDownloadButton=True`
     const sheet = { id, title: newTitle.trim(), url: newUrl.trim(), embed, folder: selectedFolder }
-    setCustomSheets((prev) => {
-      const updated = [...prev, sheet]
-      localStorage.setItem('worksheetCustomSheets', JSON.stringify(updated))
-      return updated
-    })
+
+    if (API_BASE) {
+      try {
+        const res = await fetch(`${API_BASE}/worksheets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: sheet.title, url: sheet.url, folder: sheet.folder, embed }),
+        })
+        if (!res.ok) throw new Error(`Status ${res.status}`)
+        const data = await res.json()
+        const saved = data.sheet || sheet
+        setCustomSheets((prev) => [...prev, saved])
+        setDataError('')
+      } catch (err) {
+        setDataError('Unable to save to server. Saved locally instead.')
+        setCustomSheets((prev) => {
+          const updated = [...prev, sheet]
+          saveSheetsLocal(updated)
+          return updated
+        })
+      }
+    } else {
+      setCustomSheets((prev) => {
+        const updated = [...prev, sheet]
+        saveSheetsLocal(updated)
+        return updated
+      })
+    }
+
     setWorksheetMeta((prev) => ({
       ...prev,
       [id]: { lastOpened: '', lastOpenedBy: '', loading: false, embedUrl: embed },
@@ -169,15 +213,35 @@ const Product = () => {
     setNewUrl('')
   }
 
-  const addFolder = () => {
+  const addFolder = async () => {
     const name = newFolderName.trim()
     if (!name) return
-    setCustomFolders((prev) => {
-      if (prev.includes(name) || DEFAULT_FOLDERS.includes(name)) return prev
-      const updated = [...prev, name]
-      localStorage.setItem('worksheetCustomFolders', JSON.stringify(updated))
-      return updated
-    })
+    const addLocal = () => {
+      setCustomFolders((prev) => {
+        if (prev.includes(name) || DEFAULT_FOLDERS.includes(name)) return prev
+        const updated = [...prev, name]
+        saveFoldersLocal(updated)
+        return updated
+      })
+    }
+
+    if (API_BASE) {
+      try {
+        const res = await fetch(`${API_BASE}/worksheets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'folder', name }),
+        })
+        if (!res.ok) throw new Error(`Status ${res.status}`)
+        setCustomFolders((prev) => (prev.includes(name) ? prev : [...prev, name]))
+        setDataError('')
+      } catch (err) {
+        setDataError('Unable to save folder to server. Saved locally instead.')
+        addLocal()
+      }
+    } else {
+      addLocal()
+    }
     setNewFolderName('')
   }
 
@@ -261,6 +325,30 @@ const Product = () => {
     fetchMeta()
   }, [authorized, allSheets])
 
+  useEffect(() => {
+    if (!authorized || !API_BASE) return
+    const fetchRemote = async () => {
+      setDataLoading(true)
+      setDataError('')
+      try {
+        const res = await fetch(`${API_BASE}/worksheets`)
+        if (!res.ok) throw new Error(`Status ${res.status}`)
+        const data = await res.json()
+        if (Array.isArray(data.sheets)) {
+          setCustomSheets(data.sheets)
+        }
+        if (Array.isArray(data.folders)) {
+          setCustomFolders(data.folders)
+        }
+      } catch (err) {
+        setDataError('Unable to load shared worksheets. Using local data instead.')
+      } finally {
+        setDataLoading(false)
+      }
+    }
+    fetchRemote()
+  }, [authorized])
+
   return (
     <div className={`bg-primary ${styles.paddingX} ${styles.flexStart}`}>
       <div className={`${styles.boxWidth} py-16`}>
@@ -323,6 +411,12 @@ const Product = () => {
                 <p className='text-muted text-sm mb-3'>
                   Select a worksheet folder to open in your browser or Excel.
                 </p>
+                {dataLoading && (
+                  <p className='text-muted text-sm mb-2'>Loading shared worksheets…</p>
+                )}
+                {dataError && (
+                  <p className='text-secondary text-sm mb-2'>{dataError}</p>
+                )}
                 {!uploadConfigured && (
                   <p className='text-secondary text-sm mb-3'>
                     Uploads are disabled: set VITE_API_BASE to enable OneDrive uploads.

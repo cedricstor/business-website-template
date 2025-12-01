@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import styles from '../style'
 
 const toNumber = (value) => {
@@ -19,6 +19,12 @@ const ToolsPage = () => {
     costPerKg: '2.5',
     marginPct: '20',
   })
+  const [visibleSections, setVisibleSections] = useState({
+    seed: false,
+    revenue: false,
+    mix: false,
+  })
+  const [scrollTarget, setScrollTarget] = useState(null)
 
   const [splitInputs, setSplitInputs] = useState({
     total: '10000',
@@ -142,6 +148,39 @@ const ToolsPage = () => {
     }
   }, [mixInputs])
 
+  const seedSectionRef = useRef(null)
+  const revenueSectionRef = useRef(null)
+  const mixSectionRef = useRef(null)
+  const sectionRefs = useMemo(
+    () => ({
+      seed: seedSectionRef,
+      revenue: revenueSectionRef,
+      mix: mixSectionRef,
+    }),
+    []
+  )
+
+  const toggleSection = (sectionKey) => {
+    setVisibleSections((prev) => {
+      const nextState = !prev[sectionKey]
+      if (nextState) {
+        setScrollTarget(sectionKey)
+      } else {
+        setScrollTarget(null)
+      }
+      return { ...prev, [sectionKey]: nextState }
+    })
+  }
+
+  useEffect(() => {
+    if (!scrollTarget) return
+    const targetRef = sectionRefs[scrollTarget]
+    if (visibleSections[scrollTarget] && targetRef?.current) {
+      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setScrollTarget(null)
+    }
+  }, [scrollTarget, visibleSections, sectionRefs])
+
   return (
     <div className={`bg-primary ${styles.paddingX} ${styles.flexStart}`}>
       <div className={`${styles.boxWidth} py-16 space-y-12`}>
@@ -156,8 +195,41 @@ const ToolsPage = () => {
           </p>
         </header>
 
+        <div className='grid gap-3 sm:grid-cols-3'>
+          <div className='rounded-2xl bg-black-gradient p-4 border border-dimBlue'>
+            <button
+              type='button'
+              onClick={() => toggleSection('seed')}
+              className='w-full rounded-lg border border-secondary text-secondary px-4 py-2 font-semibold hover:border-secondary/80 hover:text-secondary/80 transition'
+            >
+              Seed pricing calculator
+            </button>
+          </div>
+          <div className='rounded-2xl bg-black-gradient p-4 border border-dimBlue'>
+            <button
+              type='button'
+              onClick={() => toggleSection('revenue')}
+              className='w-full rounded-lg border border-secondary text-secondary px-4 py-2 font-semibold hover:border-secondary/80 hover:text-secondary/80 transition'
+            >
+              Revenue split calculator Partners
+            </button>
+          </div>
+          <div className='rounded-2xl bg-black-gradient p-4 border border-dimBlue'>
+            <button
+              type='button'
+              onClick={() => toggleSection('mix')}
+              className='w-full rounded-lg border border-secondary text-secondary px-4 py-2 font-semibold hover:border-secondary/80 hover:text-secondary/80 transition'
+            >
+              Seed mix splitter
+            </button>
+          </div>
+        </div>
+
         <section className='grid gap-6 lg:grid-cols-2'>
-          <div className='rounded-2xl bg-black-gradient p-6 border border-dimBlue'>
+          <div
+            ref={sectionRefs.seed}
+            className={`rounded-2xl bg-black-gradient p-6 border border-dimBlue ${visibleSections.seed ? '' : 'hidden'}`}
+          >
             <div className='flex items-center justify-between mb-4'>
               <h2 className='text-2xl font-semibold text-body'>Seed pricing calculator</h2>
               <span className='text-secondary text-sm'>Instant math</span>
@@ -231,7 +303,10 @@ const ToolsPage = () => {
             </div>
           </div>
 
-          <div className='rounded-2xl bg-black-gradient p-6 border border-dimBlue'>
+          <div
+            ref={sectionRefs.revenue}
+            className={`rounded-2xl bg-black-gradient p-6 border border-dimBlue ${visibleSections.revenue ? '' : 'hidden'}`}
+          >
             <div className='flex items-center justify-between mb-4'>
               <h2 className='text-2xl font-semibold text-body'>Revenue split calculator</h2>
               <span className='text-secondary text-sm'>Partners</span>
@@ -274,7 +349,10 @@ const ToolsPage = () => {
           </div>
         </section>
 
-        <section className='rounded-2xl bg-black-gradient p-6 border border-dimBlue'>
+        <section
+          ref={sectionRefs.mix}
+          className={`rounded-2xl bg-black-gradient p-6 border border-dimBlue ${visibleSections.mix ? '' : 'hidden'}`}
+        >
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-2xl font-semibold text-body'>Seed mix splitter</h2>
             <span className='text-secondary text-sm'>100% check</span>

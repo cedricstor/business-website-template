@@ -367,7 +367,7 @@ const Product = () => {
                         key={sheet.id}
                         className='rounded-lg px-4 py-3 flex flex-col gap-3 border border-dimBlue bg-primary/60'
                       >
-                        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+                        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                           <div>
                             <p className='text-body font-semibold'>{sheet.title}</p>
                             <p className='text-muted text-sm'>
@@ -387,7 +387,7 @@ const Product = () => {
                               className='px-4 py-2 bg-secondary text-primary font-semibold rounded-lg whitespace-nowrap'
                               onClick={() => markOpenedNow(sheet.id)}
                             >
-                              Open in browser
+                              Open in browser (OneDrive)
                             </a>
                             <a
                               href={`ms-excel:ofe|u|${sheet.url}`}
@@ -396,42 +396,40 @@ const Product = () => {
                             >
                               Open in Excel
                             </a>
-                          </div>
-                        </div>
-                        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2'>
-                          <label
-                            className={`inline-flex items-center gap-2 px-4 py-2 border text-body rounded-lg w-fit ${
-                              uploadConfigured ? 'cursor-pointer border-dimBlue' : 'opacity-60 cursor-not-allowed border-dimBlue'
-                            }`}
-                          >
-                            <span>Upload updated sheet</span>
-                            <input
-                              type='file'
-                              className='hidden'
-                              disabled={!uploadConfigured}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  handleUpload(file, sheet.id)
-                                  e.target.value = ''
-                                }
-                              }}
-                            />
-                          </label>
-                          {uploadStatus[sheet.id]?.message && (
-                            <p
-                              className={`text-sm ${
-                                uploadStatus[sheet.id].state === 'error'
-                                  ? 'text-secondary'
-                                  : uploadStatus[sheet.id].state === 'uploading'
-                                  ? 'text-muted'
-                                  : 'text-body'
+                            <label
+                              className={`px-4 py-2 border text-body font-semibold rounded-lg whitespace-nowrap ${
+                                uploadConfigured ? 'cursor-pointer border-dimBlue hover:border-secondary/70' : 'opacity-60 cursor-not-allowed border-dimBlue'
                               }`}
                             >
-                              {uploadStatus[sheet.id].message}
-                            </p>
-                          )}
+                              Upload from computer
+                              <input
+                                type='file'
+                                className='hidden'
+                                disabled={!uploadConfigured}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleUpload(file, sheet.id)
+                                    e.target.value = ''
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
+                        {uploadStatus[sheet.id]?.message && (
+                          <p
+                            className={`text-sm ${
+                              uploadStatus[sheet.id].state === 'error'
+                                ? 'text-secondary'
+                                : uploadStatus[sheet.id].state === 'uploading'
+                                ? 'text-muted'
+                                : 'text-body'
+                            }`}
+                          >
+                            {uploadStatus[sheet.id].message}
+                          </p>
+                        )}
                       </div>
                     )
                   })}
